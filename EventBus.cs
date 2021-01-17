@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace Refsa.EventBus
 {
@@ -69,6 +70,23 @@ namespace Refsa.EventBus
             }
         }
 
+        public void Pub(object message)
+        {
+            var imessage = message as IMessage;
+            if (imessage == null) return;
+
+            if (lockDispatch && !(message is IOverrideBusLock))
+            {
+                incomingMessages.Push(BusLock.Message(() => Pub(imessage), imessage));
+                return;
+            }
+
+            if (messageHandlers.TryGetValue(message.GetType(), out var handler))
+            {
+                handler.Pub(imessage);
+            }
+        }
+
         public void Pub<TMessage, HTarget>(TMessage message) where TMessage : IMessage
         {
             if (lockDispatch && !(message is IOverrideBusLock))
@@ -106,7 +124,7 @@ namespace Refsa.EventBus
 
             messageHandlers[typeof(TMessage)].Sub(callback);
         }
-
+        
         public void UnSub<TMessage>(System.Action<TMessage> callback) where TMessage : IMessage
         {
             if (messageHandlers.TryGetValue(typeof(TMessage), out var handler))
