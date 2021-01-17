@@ -1,3 +1,6 @@
 using UnityEngine;
 
-public interface IMessage { }
+namespace Refsa.EventBus
+{
+    public interface IMessage { }
+}

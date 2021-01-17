@@ -1,29 +1,32 @@
-public interface IOverrideBusLock { }
-public struct LockBusMessage : IMessage, IOverrideBusLock { }
-public struct UnlockBusMessage : IMessage, IOverrideBusLock { }
-
-public struct BusLock
+namespace Refsa.EventBus
 {
-    public System.Action Callback;
-    public IMessage SentMessage;
-    public bool Locked;
+    public interface IOverrideBusLock { }
+    public struct LockBusMessage : IMessage, IOverrideBusLock { }
+    public struct UnlockBusMessage : IMessage, IOverrideBusLock { }
 
-    public static BusLock Message(System.Action callback, IMessage message)
+    public struct BusLock
     {
-        return new BusLock
-        {
-            Locked = false,
-            SentMessage = message,
-            Callback = callback
-        };
-    }
+        public System.Action Callback;
+        public IMessage SentMessage;
+        public bool Locked;
 
-    public static BusLock Lock()
-    {
-        return new BusLock
+        public static BusLock Message(System.Action callback, IMessage message)
         {
-            Locked = true,
-            Callback = null
-        };
+            return new BusLock
+            {
+                Locked = false,
+                SentMessage = message,
+                Callback = callback
+            };
+        }
+
+        public static BusLock Lock()
+        {
+            return new BusLock
+            {
+                Locked = true,
+                Callback = null
+            };
+        }
     }
 }

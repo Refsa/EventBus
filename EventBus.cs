@@ -1,115 +1,118 @@
 ﻿using System.Collections.Generic;
 
-public class EventBus
+namespace Refsa.EventBus
 {
-    Dictionary<System.Type, IHandler<IMessage>> messageHandlers;
-
-    Stack<BusLock> incomingMessages;
-    Stack<System.Action> toResolve;
-    bool lockDispatch => incomingMessages.Count > 0;
-
-    public Stack<BusLock> IncomingMessages => incomingMessages;
-
-    public EventBus()
+    public class EventBus
     {
-        Sub<LockBusMessage>(OnLockBus);
-        Sub<UnlockBusMessage>(OnUnlockBus);
+        Dictionary<System.Type, IHandler<IMessage>> messageHandlers;
 
-        messageHandlers = new Dictionary<System.Type, IHandler<IMessage>>();
-        incomingMessages = new Stack<BusLock>();
-        toResolve = new Stack<System.Action>();
-    }
+        Stack<BusLock> incomingMessages;
+        Stack<System.Action> toResolve;
+        bool lockDispatch => incomingMessages.Count > 0;
 
-    void OnLockBus(LockBusMessage message)
-    {
-        incomingMessages.Push(BusLock.Lock());
-    }
+        public Stack<BusLock> IncomingMessages => incomingMessages;
 
-    void OnUnlockBus(UnlockBusMessage message)
-    {
-        while (incomingMessages.Count > 0)
+        public EventBus()
         {
-            var state = incomingMessages.Pop();
+            messageHandlers = new Dictionary<System.Type, IHandler<IMessage>>();
+            incomingMessages = new Stack<BusLock>();
+            toResolve = new Stack<System.Action>();
 
-            if (state.Locked)
+            Sub<LockBusMessage>(OnLockBus);
+            Sub<UnlockBusMessage>(OnUnlockBus);
+        }
+
+        void OnLockBus(LockBusMessage message)
+        {
+            incomingMessages.Push(BusLock.Lock());
+        }
+
+        void OnUnlockBus(UnlockBusMessage message)
+        {
+            while (incomingMessages.Count > 0)
             {
-                break;
+                var state = incomingMessages.Pop();
+
+                if (state.Locked)
+                {
+                    break;
+                }
+
+                if (state.Callback != null)
+                {
+                    toResolve.Push(state.Callback);
+                }
             }
 
-            if (state.Callback != null)
+            while (toResolve.Count > 0)
             {
-                toResolve.Push(state.Callback);
+                toResolve.Pop().Invoke();
             }
         }
 
-        while (toResolve.Count > 0)
+        public bool IsLocked()
         {
-            toResolve.Pop().Invoke();
-        }
-    }
-
-    public bool IsLocked()
-    {
-        return lockDispatch;
-    }
-
-    public void Pub<TMessage>(TMessage message) where TMessage : IMessage
-    {
-        if (lockDispatch && !(message is IOverrideBusLock))
-        {
-            incomingMessages.Push(BusLock.Message(() => Pub(message), message));
-            return;
+            return lockDispatch;
         }
 
-        if (messageHandlers.TryGetValue(typeof(TMessage), out var handler))
+        public void Pub<TMessage>(TMessage message) where TMessage : IMessage
         {
-            handler.Pub(message);
-        }
-    }
+            if (lockDispatch && !(message is IOverrideBusLock))
+            {
+                incomingMessages.Push(BusLock.Message(() => Pub(message), message));
+                return;
+            }
 
-    public void Pub<TMessage, HTarget>(TMessage message) where TMessage : IMessage
-    {
-        if (lockDispatch && !(message is IOverrideBusLock))
-        {
-            incomingMessages.Push(BusLock.Message(() => Pub<TMessage, HTarget>(message), message));
-            return;
-        }
-
-        if (messageHandlers.TryGetValue(typeof(TMessage), out var handler))
-        {
-            handler.Pub<HTarget>(message);
-        }
-    }
-
-    public void Pub<TMessage>(TMessage message, object target) where TMessage : IMessage
-    {
-        if (lockDispatch && !(message is IOverrideBusLock))
-        {
-            incomingMessages.Push(BusLock.Message(() => Pub(message, target), message));
-            return;
+            if (messageHandlers.TryGetValue(typeof(TMessage), out var handler))
+            {
+                handler.Pub(message);
+            }
         }
 
-        if (messageHandlers.TryGetValue(typeof(TMessage), out var handler))
+        public void Pub<TMessage, HTarget>(TMessage message) where TMessage : IMessage
         {
-            handler.Pub(message, target);
+            if (lockDispatch && !(message is IOverrideBusLock))
+            {
+                incomingMessages.Push(BusLock.Message(() => Pub<TMessage, HTarget>(message), message));
+                return;
+            }
+
+            if (messageHandlers.TryGetValue(typeof(TMessage), out var handler))
+            {
+                handler.Pub<HTarget>(message);
+            }
         }
-    }
 
-    public void Sub<TMessage>(System.Action<TMessage> callback) where TMessage : IMessage
-    {
-        if (!messageHandlers.TryGetValue(typeof(TMessage), out var handler))
+        public void Pub<TMessage>(TMessage message, object target) where TMessage : IMessage
         {
-            messageHandlers.Add(typeof(TMessage), new MessageHandler<TMessage, IMessage>());
+            if (lockDispatch && !(message is IOverrideBusLock))
+            {
+                incomingMessages.Push(BusLock.Message(() => Pub(message, target), message));
+                return;
+            }
+
+            if (messageHandlers.TryGetValue(typeof(TMessage), out var handler))
+            {
+                handler.Pub(message, target);
+            }
         }
 
-        messageHandlers[typeof(TMessage)].Sub(callback);
-    }
-
-    public void UnSub<TMessage>(System.Action<TMessage> callback) where TMessage : IMessage
-    {
-        if (messageHandlers.TryGetValue(typeof(TMessage), out var handler))
+        public void Sub<TMessage>(System.Action<TMessage> callback) where TMessage : IMessage
         {
-            handler.UnSub(callback);
+            if (!messageHandlers.TryGetValue(typeof(TMessage), out var handler))
+            {
+                messageHandlers.Add(typeof(TMessage), new MessageHandler<TMessage, IMessage>());
+            }
+
+            messageHandlers[typeof(TMessage)].Sub(callback);
+        }
+
+        public void UnSub<TMessage>(System.Action<TMessage> callback) where TMessage : IMessage
+        {
+            if (messageHandlers.TryGetValue(typeof(TMessage), out var handler))
+            {
+                handler.UnSub(callback);
+            }
         }
     }
 }
