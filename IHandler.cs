@@ -1,5 +1,3 @@
-using UnityEngine;
-
 namespace Refsa.EventBus
 {
     public interface IHandler<T>
