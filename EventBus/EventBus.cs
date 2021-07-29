@@ -4,6 +4,7 @@ namespace Refsa.EventBus
 {
     public class EventBus
     {
+        object locker = new object();
         Dictionary<System.Type, IHandler<IMessage>> resolvers;
 
         public EventBus()
@@ -16,7 +17,11 @@ namespace Refsa.EventBus
             if (!resolvers.TryGetValue(typeof(TMessage), out var resolver))
             {
                 resolver = new MessageHandler<TMessage, IMessage>();
-                resolvers.Add(typeof(TMessage), resolver);
+
+                lock (locker)
+                {
+                    resolvers.Add(typeof(TMessage), resolver);
+                }
             }
 
             return (MessageHandler<TMessage, IMessage>)resolver;
@@ -31,7 +36,7 @@ namespace Refsa.EventBus
         {
             GetResolver<TMessage>().Pub<HTarget>(message);
         }
- 
+
         public void Pub<TMessage>(in TMessage message, object target) where TMessage : IMessage
         {
             GetResolver<TMessage>().Pub(message, target);
@@ -39,12 +44,20 @@ namespace Refsa.EventBus
 
         public void Sub<TMessage>(MessageHandlerDelegates.MessageHandler<TMessage> callback) where TMessage : IMessage
         {
-            GetResolver<TMessage>().Sub(callback);
+            var resolver = GetResolver<TMessage>();
+            lock (locker)
+            {
+                resolver.Sub(callback);
+            }
         }
-        
+
         public void UnSub<TMessage>(MessageHandlerDelegates.MessageHandler<TMessage> callback) where TMessage : IMessage
         {
-            GetResolver<TMessage>().UnSub(callback);
+            var resolver = GetResolver<TMessage>();
+            lock (locker)
+            {
+                resolver.UnSub(callback);
+            }
         }
     }
 }
