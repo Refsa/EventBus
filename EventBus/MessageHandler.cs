@@ -3,20 +3,27 @@ using System.Linq;
 
 namespace Refsa.EventBus
 {
-    public class MessageHandler<MData, MType> : IHandler<MType>
+    public static class MessageHandlerDelegates
     {
-        public event System.Action<MData> observers;
+        public delegate void MessageHandler<TMessage>(in TMessage message);
+    }
 
-        public void Pub(MType message)
+    class MessageHandler<MData, MType>
+    {
+        event MessageHandlerDelegates.MessageHandler<MData> observers;
+
+        public void Pub(in MType message)
         {
-            Pub(message, observers.Invoke);
+            if (observers == null) return;
+
+            Pub(message, (MessageHandlerDelegates.MessageHandler<MData>)observers.Invoke);
         }
 
-        public void Pub<HTarget>(MType message)
+        public void Pub<HTarget>(in MType message)
         {
-            Pub(message, (m) =>
+            Pub(message, (in MData m) =>
             {
-                foreach (System.Action<MData> observer in observers.GetInvocationList()
+                foreach (MessageHandlerDelegates.MessageHandler<MData> observer in observers.GetInvocationList()
                     .Where(e => e.Target.GetType().FullName.Contains(typeof(HTarget).Name)))
                 {
                     observer.Invoke(m);
@@ -24,11 +31,11 @@ namespace Refsa.EventBus
             });
         }
 
-        public void Pub(MType message, object target)
+        public void Pub(in MType message, object target)
         {
-            Pub(message, (m) =>
+            Pub(message, (in MData m) =>
             {
-                foreach (System.Action<MData> observer in observers.GetInvocationList()
+                foreach (MessageHandlerDelegates.MessageHandler<MData> observer in observers.GetInvocationList()
                     .Where(e => e.Target == target))
                 {
                     observer.Invoke(m);
@@ -36,7 +43,7 @@ namespace Refsa.EventBus
             });
         }
 
-        void Pub(MType message, System.Action<MData> action)
+        void Pub(in MType message, MessageHandlerDelegates.MessageHandler<MData> action)
         {
             if (observers == null)
             {
@@ -51,20 +58,14 @@ namespace Refsa.EventBus
             throw new System.ArgumentException($"Message given to message handler is of wrong type\nShould be {typeof(MData)} but was {message.GetType()}");
         }
 
-        public void Sub(Delegate callback)
+        public void Sub(MessageHandlerDelegates.MessageHandler<MData> callback)
         {
-            if (callback is System.Action<MData> c)
-            {
-                observers += c;
-            }
+            observers += callback;
         }
 
-        public void UnSub(Delegate callback)
+        public void UnSub(MessageHandlerDelegates.MessageHandler<MData> callback)
         {
-            if (callback is System.Action<MData> c)
-            {
-                observers -= c;
-            }
+            observers -= callback;
         }
     }
 }
