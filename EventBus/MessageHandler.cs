@@ -8,7 +8,9 @@ namespace Refsa.EventBus
         public delegate void MessageHandler<TMessage>(in TMessage message);
     }
 
-    class MessageHandler<MData, MType>
+    interface IHandler<TMessage> { }
+
+    class MessageHandler<MData, MType> : IHandler<IMessage>
     {
         event MessageHandlerDelegates.MessageHandler<MData> observers;
 
