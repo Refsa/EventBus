@@ -16,7 +16,7 @@ namespace Refsa.EventBus.Tests
         public void sub_and_pub_message()
         {
             var msg = new TestMessage { Content = 1234 };
-            var bus = new EventBus();
+            var bus = new MessageBus();
 
             int received = 0;
             bus.Sub<TestMessage>((in TestMessage m) =>
@@ -35,8 +35,8 @@ namespace Refsa.EventBus.Tests
             var msg1 = new TestMessage { Content = 1234 };
             var msg2 = new TestMessage { Content = 4321 };
 
-            var eb1 = new EventBus();
-            var eb2 = new EventBus();
+            var eb1 = new MessageBus();
+            var eb2 = new MessageBus();
 
             int recv1 = 0;
             eb1.Sub<TestMessage>((in TestMessage m) => { recv1 = m.Content; });
@@ -54,7 +54,7 @@ namespace Refsa.EventBus.Tests
         public void event_bus_can_be_used_in_multiple_threads()
         {
             var msg1 = new TestMessage { Content = 1234 };
-            var eb = new EventBus();
+            var eb = new MessageBus();
 
             var recv = new System.Collections.Concurrent.ConcurrentBag<int>();
             eb.Sub<TestMessage>((in TestMessage m) => { recv.Add(m.Content); });

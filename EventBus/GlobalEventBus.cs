@@ -4,11 +4,11 @@ namespace Refsa.EventBus
 {
     public static class GlobalEventBus
     {
-        public static readonly EventBus EventBus;
+        public static readonly MessageBus EventBus;
 
         static GlobalEventBus()
         {
-            EventBus = new EventBus();
+            EventBus = new MessageBus();
         }
     }
 }

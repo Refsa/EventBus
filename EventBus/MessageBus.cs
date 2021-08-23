@@ -2,12 +2,12 @@
 
 namespace Refsa.EventBus
 {
-    public class EventBus
+    public class MessageBus
     {
         object locker = new object();
         Dictionary<System.Type, IHandler<IMessage>> resolvers;
 
-        public EventBus()
+        public MessageBus()
         {
             resolvers = new Dictionary<System.Type, IHandler<IMessage>>();
         }
