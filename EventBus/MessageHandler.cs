@@ -8,24 +8,25 @@ namespace Refsa.EventBus
         public delegate void MessageHandler<TMessage>(in TMessage message);
     }
 
+    public interface IMessage { }
     interface IHandler<TMessage> { }
 
-    class MessageHandler<MData, MType> : IHandler<IMessage>
+    class MessageHandler<TData, TType> : IHandler<IMessage>
     {
-        event MessageHandlerDelegates.MessageHandler<MData> observers;
+        event MessageHandlerDelegates.MessageHandler<TData> observers;
 
-        public void Pub(in MType message)
+        public void Pub(in TType message)
         {
             if (observers == null) return;
 
-            Pub(message, (MessageHandlerDelegates.MessageHandler<MData>)observers.Invoke);
+            Pub(message, (MessageHandlerDelegates.MessageHandler<TData>)observers.Invoke);
         }
 
-        public void Pub<HTarget>(in MType message)
+        public void Pub<HTarget>(in TType message)
         {
-            Pub(message, (in MData m) =>
+            Pub(message, (in TData m) =>
             {
-                foreach (MessageHandlerDelegates.MessageHandler<MData> observer in observers.GetInvocationList()
+                foreach (MessageHandlerDelegates.MessageHandler<TData> observer in observers.GetInvocationList()
                     .Where(e => e.Target.GetType().FullName.Contains(typeof(HTarget).Name)))
                 {
                     observer.Invoke(m);
@@ -33,11 +34,11 @@ namespace Refsa.EventBus
             });
         }
 
-        public void Pub(in MType message, object target)
+        public void Pub(in TType message, object target)
         {
-            Pub(message, (in MData m) =>
+            Pub(message, (in TData m) =>
             {
-                foreach (MessageHandlerDelegates.MessageHandler<MData> observer in observers.GetInvocationList()
+                foreach (MessageHandlerDelegates.MessageHandler<TData> observer in observers.GetInvocationList()
                     .Where(e => e.Target == target))
                 {
                     observer.Invoke(m);
@@ -45,27 +46,27 @@ namespace Refsa.EventBus
             });
         }
 
-        void Pub(in MType message, MessageHandlerDelegates.MessageHandler<MData> action)
+        void Pub(in TType message, MessageHandlerDelegates.MessageHandler<TData> action)
         {
             if (observers == null)
             {
                 return;
             }
 
-            if (message is MData t)
+            if (message is TData t)
             {
                 action.Invoke(t);
                 return;
             }
-            throw new System.ArgumentException($"Message given to message handler is of wrong type\nShould be {typeof(MData)} but was {message.GetType()}");
+            throw new System.ArgumentException($"Message given to message handler is of wrong type\nShould be {typeof(TData)} but was {message.GetType()}");
         }
 
-        public void Sub(MessageHandlerDelegates.MessageHandler<MData> callback)
+        public void Sub(MessageHandlerDelegates.MessageHandler<TData> callback)
         {
             observers += callback;
         }
 
-        public void UnSub(MessageHandlerDelegates.MessageHandler<MData> callback)
+        public void UnSub(MessageHandlerDelegates.MessageHandler<TData> callback)
         {
             observers -= callback;
         }
