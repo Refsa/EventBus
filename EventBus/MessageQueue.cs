@@ -15,9 +15,9 @@ namespace Refsa.EventBus
 
         public int Count => queue.Count;
 
-        public MessageBag(int capacity)
+        public MessageBag()
         {
-            queue = new Queue<TMessage>(capacity);
+            queue = new Queue<TMessage>();
         }
 
         public void Clear()
@@ -48,14 +48,10 @@ namespace Refsa.EventBus
         List<IMessageBag> bags;
         MessageBus bus;
 
-        int queueCapacity;
-
         public MessageBus Bus => bus;
 
-        public MessageQueue(int queueCapacity)
+        public MessageQueue()
         {
-            this.queueCapacity = queueCapacity;
-
             bags = new List<IMessageBag>();
             bus = new MessageBus();
         }
@@ -70,7 +66,7 @@ namespace Refsa.EventBus
                 bags.Add(null);
             }
 
-            bags[id] ??= MessageBag.Factory<TMessage>.MakeBag(queueCapacity);
+            bags[id] ??= MessageBag.Factory<TMessage>.MakeBag();
             (bags[id] as MessageBag<TMessage>).Enqueue(value);
         }
 
@@ -141,9 +137,9 @@ namespace Refsa.EventBus
 
             public static int ID => id;
 
-            public static MessageBag<TMessage> MakeBag(int capacity)
+            public static MessageBag<TMessage> MakeBag()
             {
-                return new MessageBag<TMessage>(capacity);
+                return new MessageBag<TMessage>();
             }
         }
     }

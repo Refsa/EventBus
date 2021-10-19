@@ -20,7 +20,7 @@ namespace Refsa.EventBus.Tests
         [Fact]
         public void message_bag_modify()
         {
-            var bag = new MessageBag<TestMessage>(4);
+            var bag = new MessageBag<TestMessage>();
 
             var msg = new TestMessage { Content = 1234 };
             bag.Enqueue(msg);
@@ -35,7 +35,7 @@ namespace Refsa.EventBus.Tests
             bool wasEqual = false;
             var msg = new TestMessage { Content = 1234 };
 
-            var mq = new MessageQueue(4);
+            var mq = new MessageQueue();
             mq.Bus.Sub<TestMessage>((in TestMessage pub) =>
             {
                 wasEqual = msg.Equals(pub);
@@ -53,7 +53,7 @@ namespace Refsa.EventBus.Tests
             int testCount = 16;
             int pubCount = 0;
 
-            var mq = new MessageQueue(testCount);
+            var mq = new MessageQueue();
             mq.Bus.Sub<TestMessage>((in TestMessage pub) =>
             {
                 Assert.Equal(pubCount, pub.Content);
