@@ -5,6 +5,7 @@ git checkout main \
     ./EventBus/MessageHandler.cs \
     ./EventBus/MessageQueue.cs
 
+git checkout Unity
 git add .
 git commit -m "Merged main"
 git push
