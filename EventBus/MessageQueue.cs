@@ -45,14 +45,14 @@ namespace Refsa.EventBus
 
     public class MessageQueue
     {
-        List<IMessageBag> bags;
+        Dictionary<int, IMessageBag> bags;
         MessageBus bus;
 
         public MessageBus Bus => bus;
 
         public MessageQueue()
         {
-            bags = new List<IMessageBag>();
+            bags = new Dictionary<int, IMessageBag>();
             bus = new MessageBus();
         }
 
@@ -60,22 +60,22 @@ namespace Refsa.EventBus
             where TMessage : IMessage
         {
             int id = MessageBag.Factory<TMessage>.ID;
-
-            while (bags.Count <= id)
+            if (!bags.TryGetValue(id, out var bag))
             {
-                bags.Add(null);
+                bag = MessageBag.Factory<TMessage>.MakeBag();
+                bags.Add(id, bag);
             }
 
-            bags[id] ??= MessageBag.Factory<TMessage>.MakeBag();
-            (bags[id] as MessageBag<TMessage>).Enqueue(value);
+            (bag as MessageBag<TMessage>).Enqueue(value);
         }
 
         public void DispatchSingle<TMessage>()
             where TMessage : IMessage
         {
-            if (!HasBag<TMessage>(out int id)) return;
+            int id = MessageBag.Factory<TMessage>.ID;
+            if (!bags.TryGetValue(id, out var bag)) return;
 
-            if ((bags[id] as MessageBag<TMessage>).Dequeue(out var msg))
+            if ((bag as MessageBag<TMessage>).Dequeue(out var msg))
             {
                 bus.Pub(msg);
             }
@@ -84,9 +84,10 @@ namespace Refsa.EventBus
         public void DispatchAll<TMessage>()
             where TMessage : IMessage
         {
-            if (!HasBag<TMessage>(out int id)) return;
+            int id = MessageBag.Factory<TMessage>.ID;
+            if (!bags.TryGetValue(id, out var bag)) return;
 
-            var bagsT = bags[id] as MessageBag<TMessage>;
+            var bagsT = bag as MessageBag<TMessage>;
             while (bagsT.Dequeue(out var msg))
             {
                 bus.Pub(msg);
@@ -96,28 +97,17 @@ namespace Refsa.EventBus
         public void Clear<TMessage>()
             where TMessage : IMessage
         {
-            if (!HasBag<TMessage>(out int id)) return;
-
-            bags[id]?.Clear();
+            int id = MessageBag.Factory<TMessage>.ID;
+            if (!bags.TryGetValue(id, out var bag)) return;
+            bag.Clear();
         }
 
         public void ClearAll()
         {
             foreach (var bag in bags)
             {
-                bag?.Clear();
+                bag.Value.Clear();
             }
-        }
-
-        bool HasBag<TMessage>(out int id)
-            where TMessage : IMessage
-        {
-            id = MessageBag.Factory<TMessage>.ID;
-
-            if (bags.Count < id) return false;
-            if (bags[id] == null) return false;
-
-            return true;
         }
     }
 
