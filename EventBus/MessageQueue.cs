@@ -27,7 +27,14 @@ namespace Refsa.EventBus
 
         public bool Dequeue(out TMessage value)
         {
-            return queue.TryDequeue(out value);
+            if (queue.Count == 0)
+            {
+                value = default;
+                return false;
+            }
+
+            value = queue.Dequeue();
+            return true;
         }
 
         public void Enqueue(in TMessage value)
