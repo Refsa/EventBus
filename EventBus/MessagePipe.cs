@@ -55,5 +55,10 @@ namespace Refsa.EventBus
                 child.PubDown(message);
             }
         }
+
+        public void UnSub<TMessage>(MessageHandlerDelegates.MessageHandler<TMessage> callback) where TMessage : IMessage
+        {
+            bus.UnSub<TMessage>(callback);
+        }
     }
 }
