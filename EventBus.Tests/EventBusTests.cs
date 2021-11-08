@@ -30,6 +30,27 @@ namespace Refsa.EventBus.Tests
         }
 
         [Fact]
+        public void unsub_message()
+        {
+            int counter = 0;
+
+            var msg = new TestMessage();
+            var bus = new MessageBus();
+
+            bus.Sub<TestMessage>(MsgHandler);
+            bus.Pub(msg);
+            bus.UnSub<TestMessage>(MsgHandler);
+            bus.Pub(msg);
+
+            Assert.Equal(1, counter);
+
+            void MsgHandler(in TestMessage msg)
+            {
+                counter++;
+            }
+        }
+
+        [Fact]
         public void busses_dont_overlap()
         {
             var msg1 = new TestMessage { Content = 1234 };
