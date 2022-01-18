@@ -12,11 +12,14 @@ namespace Refsa.EventBus
             resolvers = new Dictionary<System.Type, IHandler<IMessage>>();
         }
 
-        MessageHandler<TMessage, IMessage> GetResolver<TMessage>() where TMessage : IMessage
+        /// <summary>
+        /// Retreives or creates a new handler for message type TMessage
+        /// </summary>
+        MessageHandler<TMessage> GetResolver<TMessage>() where TMessage : IMessage
         {
             if (!resolvers.TryGetValue(typeof(TMessage), out var resolver))
             {
-                resolver = new MessageHandler<TMessage, IMessage>();
+                resolver = new MessageHandler<TMessage>();
 
                 lock (locker)
                 {
@@ -24,24 +27,40 @@ namespace Refsa.EventBus
                 }
             }
 
-            return (MessageHandler<TMessage, IMessage>)resolver;
+            return (MessageHandler<TMessage>)resolver;
         }
 
+        /// <summary>
+        /// Pub a message
+        /// </summary>
+        /// <param name="message"></param>
+        /// <typeparam name="TMessage"></typeparam>
         public void Pub<TMessage>(in TMessage message) where TMessage : IMessage
         {
             GetResolver<TMessage>().Pub(message);
         }
 
+        /// <summary>
+        /// Pub a message to targets of specific type
+        /// </summary>
         public void Pub<TMessage, HTarget>(in TMessage message) where TMessage : IMessage
         {
             GetResolver<TMessage>().Pub<HTarget>(message);
         }
 
+        /// <summary>
+        /// Pub a message to a specific object
+        /// </summary>
         public void Pub<TMessage>(in TMessage message, object target) where TMessage : IMessage
         {
             GetResolver<TMessage>().Pub(message, target);
         }
 
+        /// <summary>
+        /// Sub to message
+        /// </summary>
+        /// <param name="callback"></param>
+        /// <typeparam name="TMessage"></typeparam>
         public void Sub<TMessage>(MessageHandlerDelegates.MessageHandler<TMessage> callback) where TMessage : IMessage
         {
             var resolver = GetResolver<TMessage>();
@@ -51,6 +70,11 @@ namespace Refsa.EventBus
             }
         }
 
+        /// <summary>
+        /// Unsub from message
+        /// </summary>
+        /// <param name="callback"></param>
+        /// <typeparam name="TMessage"></typeparam>
         public void UnSub<TMessage>(MessageHandlerDelegates.MessageHandler<TMessage> callback) where TMessage : IMessage
         {
             var resolver = GetResolver<TMessage>();
