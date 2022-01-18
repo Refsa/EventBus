@@ -11,30 +11,39 @@ namespace Refsa.EventBus
     public interface IMessage { }
     interface IHandler<TMessage> { }
 
-    class MessageHandler<TData, TType> : IHandler<IMessage>
+    class MessageHandler<TData> : IHandler<IMessage>
     {
         event MessageHandlerDelegates.MessageHandler<TData> observers;
 
-        public void Pub(in TType message)
+        /// <summary>
+        /// Pub a message to observers
+        /// </summary>
+        /// <param name="message"></param>
+        public void Pub(in TData message)
         {
             if (observers == null) return;
-
-            Pub(message, (MessageHandlerDelegates.MessageHandler<TData>)observers.Invoke);
+            observers.Invoke(message);
         }
 
-        public void Pub<HTarget>(in TType message)
+        /// <summary>
+        /// Pub a message to specific type targets
+        /// </summary>
+        public void Pub<HTarget>(in TData message)
         {
             Pub(message, (in TData m) =>
             {
                 foreach (MessageHandlerDelegates.MessageHandler<TData> observer in observers.GetInvocationList()
-                    .Where(e => e.Target.GetType().FullName.Contains(typeof(HTarget).Name)))
+                    .Where(e => e.GetType() == typeof(HTarget)))
                 {
                     observer.Invoke(m);
                 }
             });
         }
 
-        public void Pub(in TType message, object target)
+        /// <summary>
+        /// Pub a message to a specific target
+        /// </summary>
+        public void Pub(in TData message, object target)
         {
             Pub(message, (in TData m) =>
             {
@@ -46,26 +55,28 @@ namespace Refsa.EventBus
             });
         }
 
-        void Pub(in TType message, MessageHandlerDelegates.MessageHandler<TData> action)
+        /// <summary>
+        /// Pub a message to the specified predicate
+        /// </summary>
+        void Pub(in TData message, MessageHandlerDelegates.MessageHandler<TData> action)
         {
-            if (observers == null)
-            {
-                return;
-            }
-
-            if (message is TData t)
-            {
-                action.Invoke(t);
-                return;
-            }
-            throw new System.ArgumentException($"Message given to message handler is of wrong type\nShould be {typeof(TData)} but was {message.GetType()}");
+            if (observers == null) return;
+            action.Invoke(message);
         }
 
+        /// <summary>
+        /// Sub to messages
+        /// </summary>
+        /// <param name="callback"></param>
         public void Sub(MessageHandlerDelegates.MessageHandler<TData> callback)
         {
             observers += callback;
         }
 
+        /// <summary>
+        /// Unsub from messages
+        /// </summary>
+        /// <param name="callback"></param>
         public void UnSub(MessageHandlerDelegates.MessageHandler<TData> callback)
         {
             observers -= callback;
