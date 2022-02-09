@@ -12,11 +12,10 @@ namespace Refsa.EventBus.Tests
             public int Content;
         }
 
-        [Fact]
-        public void sub_and_pub_message()
+        void sub_and_pub_message(IResolver resolver)
         {
             var msg = new TestMessage { Content = 1234 };
-            var bus = new MessageBus();
+            var bus = new MessageBus(resolver);
 
             int received = 0;
             bus.Sub<TestMessage>((in TestMessage m) =>
@@ -30,12 +29,23 @@ namespace Refsa.EventBus.Tests
         }
 
         [Fact]
-        public void unsub_message()
+        public void sub_and_pub_message_dict_resolver()
+        {
+            sub_and_pub_message(new DictionaryResolver());
+        }
+
+        [Fact]
+        public void sub_and_pub_message_sparse_set_resolver()
+        {
+            sub_and_pub_message(new SparseSetResolver());
+        }
+
+        void unsub_message(IResolver resolver)
         {
             int counter = 0;
 
             var msg = new TestMessage();
-            var bus = new MessageBus();
+            var bus = new MessageBus(resolver);
 
             bus.Sub<TestMessage>(MsgHandler);
             bus.Pub(msg);
@@ -51,13 +61,24 @@ namespace Refsa.EventBus.Tests
         }
 
         [Fact]
-        public void busses_dont_overlap()
+        public void unsub_message_dict_resolver()
+        {
+            unsub_message(new DictionaryResolver());
+        }
+
+        [Fact]
+        public void unsub_message_sparse_set_resolver()
+        {
+            unsub_message(new SparseSetResolver());
+        }
+
+        void busses_dont_overlap<TResolver>() where TResolver : IResolver, new()
         {
             var msg1 = new TestMessage { Content = 1234 };
             var msg2 = new TestMessage { Content = 4321 };
 
-            var eb1 = new MessageBus();
-            var eb2 = new MessageBus();
+            var eb1 = new MessageBus(new TResolver());
+            var eb2 = new MessageBus(new TResolver());
 
             int recv1 = 0;
             eb1.Sub<TestMessage>((in TestMessage m) => { recv1 = m.Content; });
@@ -72,10 +93,21 @@ namespace Refsa.EventBus.Tests
         }
 
         [Fact]
-        public void event_bus_can_be_used_in_multiple_threads()
+        public void busses_dont_overlap_dict_resolver()
+        {
+            busses_dont_overlap<DictionaryResolver>();
+        }
+
+        [Fact]
+        public void busses_dont_overlap_sparse_set_resolver()
+        {
+            busses_dont_overlap<SparseSetResolver>();
+        }
+
+        void event_bus_can_be_used_in_multiple_threads<TResolver>() where TResolver : IResolver, new()
         {
             var msg1 = new TestMessage { Content = 1234 };
-            var eb = new MessageBus();
+            var eb = new MessageBus(new TResolver());
 
             var recv = new System.Collections.Concurrent.ConcurrentBag<int>();
             eb.Sub<TestMessage>((in TestMessage m) => { recv.Add(m.Content); });
@@ -110,6 +142,18 @@ namespace Refsa.EventBus.Tests
 
             Assert.Equal(taskCount, expected.Count);
             Assert.Equal(CalcSum(taskCount), expected.Sum());
+        }
+
+        [Fact]
+        public void event_bus_can_be_used_in_multiple_threads_dict_resolver()
+        {
+            event_bus_can_be_used_in_multiple_threads<DictionaryResolver>();
+        }
+
+        [Fact]
+        public void event_bus_can_be_used_in_multiple_threads_sparse_set_resolver()
+        {
+            event_bus_can_be_used_in_multiple_threads<SparseSetResolver>();
         }
 
         int CalcSum(int to)
