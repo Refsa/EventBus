@@ -5,29 +5,24 @@ namespace Refsa.EventBus
     public class MessageBus
     {
         object locker = new object();
-        Dictionary<System.Type, IHandler<IMessage>> resolvers;
+        IResolver resolver;
 
         public MessageBus()
         {
-            resolvers = new Dictionary<System.Type, IHandler<IMessage>>();
+            resolver = new DictionaryResolver();
         }
 
-        /// <summary>
-        /// Retreives or creates a new handler for message type TMessage
-        /// </summary>
+        public MessageBus(IResolver resolver)
+        {
+            this.resolver = resolver;
+        }
+
         MessageHandler<TMessage> GetResolver<TMessage>() where TMessage : IMessage
         {
-            if (!resolvers.TryGetValue(typeof(TMessage), out var resolver))
+            lock(locker)
             {
-                resolver = new MessageHandler<TMessage>();
-
-                lock (locker)
-                {
-                    resolvers.Add(typeof(TMessage), resolver);
-                }
+                return resolver.GetResolver<TMessage>();
             }
-
-            return (MessageHandler<TMessage>)resolver;
         }
 
         /// <summary>

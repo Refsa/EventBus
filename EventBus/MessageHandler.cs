@@ -11,7 +11,7 @@ namespace Refsa.EventBus
     public interface IMessage { }
     interface IHandler<TMessage> { }
 
-    class MessageHandler<TData> : IHandler<IMessage>
+    public class MessageHandler<TData> : IHandler<IMessage>
     {
         event MessageHandlerDelegates.MessageHandler<TData> observers;
 
