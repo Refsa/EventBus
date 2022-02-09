@@ -2,61 +2,86 @@
 
 namespace Refsa.EventBus
 {
+    /// <summary>
+    /// A simple message bus
+    /// </summary>
     public class MessageBus
     {
         object locker = new object();
-        Dictionary<System.Type, IHandler<IMessage>> resolvers;
+        IResolver resolver;
 
+        /// <summary>
+        /// Default message handler resolver is DictionaryResolver
+        /// </summary>
         public MessageBus()
         {
-            resolvers = new Dictionary<System.Type, IHandler<IMessage>>();
+            resolver = new DictionaryResolver();
         }
 
-        MessageHandler<TMessage, IMessage> GetResolver<TMessage>() where TMessage : IMessage
+        public MessageBus(IResolver resolver)
         {
-            if (!resolvers.TryGetValue(typeof(TMessage), out var resolver))
-            {
-                resolver = new MessageHandler<TMessage, IMessage>();
-
-                lock (locker)
-                {
-                    resolvers.Add(typeof(TMessage), resolver);
-                }
-            }
-
-            return (MessageHandler<TMessage, IMessage>)resolver;
+            this.resolver = resolver;
         }
 
+        MessageHandler<TMessage> GetHandler<TMessage>() where TMessage : IMessage
+        {
+            lock(locker)
+            {
+                return resolver.GetHandler<TMessage>();
+            }
+        }
+
+        /// <summary>
+        /// Pub a message
+        /// </summary>
+        /// <param name="message"></param>
+        /// <typeparam name="TMessage"></typeparam>
         public void Pub<TMessage>(in TMessage message) where TMessage : IMessage
         {
-            GetResolver<TMessage>().Pub(message);
+            GetHandler<TMessage>().Pub(message);
         }
 
+        /// <summary>
+        /// Pub a message to targets of specific type
+        /// </summary>
         public void Pub<TMessage, HTarget>(in TMessage message) where TMessage : IMessage
         {
-            GetResolver<TMessage>().Pub<HTarget>(message);
+            GetHandler<TMessage>().Pub<HTarget>(message);
         }
 
+        /// <summary>
+        /// Pub a message to a specific object
+        /// </summary>
         public void Pub<TMessage>(in TMessage message, object target) where TMessage : IMessage
         {
-            GetResolver<TMessage>().Pub(message, target);
+            GetHandler<TMessage>().Pub(message, target);
         }
 
+        /// <summary>
+        /// Sub to message
+        /// </summary>
+        /// <param name="callback"></param>
+        /// <typeparam name="TMessage"></typeparam>
         public void Sub<TMessage>(MessageHandlerDelegates.MessageHandler<TMessage> callback) where TMessage : IMessage
         {
-            var resolver = GetResolver<TMessage>();
+            var handler = GetHandler<TMessage>();
             lock (locker)
             {
-                resolver.Sub(callback);
+                handler.Sub(callback);
             }
         }
 
+        /// <summary>
+        /// Unsub from message
+        /// </summary>
+        /// <param name="callback"></param>
+        /// <typeparam name="TMessage"></typeparam>
         public void UnSub<TMessage>(MessageHandlerDelegates.MessageHandler<TMessage> callback) where TMessage : IMessage
         {
-            var resolver = GetResolver<TMessage>();
+            var handler = GetHandler<TMessage>();
             lock (locker)
             {
-                resolver.UnSub(callback);
+                handler.UnSub(callback);
             }
         }
     }
