@@ -2,11 +2,17 @@
 
 namespace Refsa.EventBus
 {
+    /// <summary>
+    /// A simple message bus
+    /// </summary>
     public class MessageBus
     {
         object locker = new object();
         IResolver resolver;
 
+        /// <summary>
+        /// Default message handler resolver is DictionaryResolver
+        /// </summary>
         public MessageBus()
         {
             resolver = new DictionaryResolver();

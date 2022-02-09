@@ -4,7 +4,8 @@ git checkout main \
     ./EventBus/MessageBus.cs \
     ./EventBus/MessageHandler.cs \
     ./EventBus/MessageQueue.cs \
-    ./EventBus/MessagePipe.cs
+    ./EventBus/MessagePipe.cs \
+    ./EventBus/Resolver.cs
 
 git checkout Unity
 git add .

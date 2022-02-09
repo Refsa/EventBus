@@ -2,11 +2,19 @@ using System.Collections.Generic;
 
 namespace Refsa.EventBus
 {
+    /// <summary>
+    /// Handles storing and getting the handler for a specific message type
+    /// </summary>
     public interface IResolver
     {
         MessageHandler<TMessage> GetResolver<TMessage>() where TMessage : IMessage;
     }
 
+    /// <summary>
+    /// A resolver using a dictionary as an interal lookup
+    /// 
+    /// Optimized for space
+    /// </summary>
     public class DictionaryResolver : IResolver
     {
         Dictionary<System.Type, IHandler<IMessage>> resolvers;
@@ -28,8 +36,18 @@ namespace Refsa.EventBus
         }
     }
 
+    /// <summary>
+    /// A resolver using a sparse set for internal lookup <br/>
+    /// 
+    /// Optimized for speed <br/>
+    /// uses N * 2 * sizeof(int) space where N is the total count of message types
+    /// registered across all resolvers
+    /// </summary>
     public class SparseSetResolver : IResolver
     {
+        /// <summary>
+        /// A very simple sparse set implementation
+        /// </summary>
         class SparseSet
         {
             int max;
@@ -45,6 +63,11 @@ namespace Refsa.EventBus
                 this.dense = new int[max];
             }
 
+            /// <summary>
+            /// Adds a value to the set
+            /// </summary>
+            /// <param name="value"></param>
+            /// <returns>The index of the value into the dense set</returns>
             public int Add(int value)
             {
                 if (value >= max)
@@ -63,6 +86,11 @@ namespace Refsa.EventBus
                 return Get(value);
             }
 
+            /// <summary>
+            /// Get the index into the dense set of the value
+            /// </summary>
+            /// <param name="value"></param>
+            /// <returns>dense set index or -1 if it's not in the set</returns>
             public int Get(int value)
             {
                 if (value >= 0 && value < max && Contains(value))
@@ -73,6 +101,10 @@ namespace Refsa.EventBus
                 return -1;
             }
 
+            /// <summary>
+            /// Removes a value from the set
+            /// </summary>
+            /// <param name="value"></param>
             public void Remove(int value)
             {
                 if (Contains(value))
@@ -83,6 +115,11 @@ namespace Refsa.EventBus
                 }
             }
 
+            /// <summary>
+            /// Checks if value is in the set
+            /// </summary>
+            /// <param name="value"></param>
+            /// <returns></returns>
             public bool Contains(int value)
             {
                 if (value >= max || value < 0) return false;
@@ -90,6 +127,9 @@ namespace Refsa.EventBus
                 return sparse[value] < count && dense[sparse[value]] == value;
             }
 
+            /// <summary>
+            /// Resets internal index counter, does not clear the contents
+            /// </summary>
             public void Clear()
             {
                 count = 0;
@@ -108,13 +148,20 @@ namespace Refsa.EventBus
             }
         }
 
+        /// <summary>
+        /// the global message type counter
+        /// </summary>
         static volatile int messageTypeCounter;
+        /// <summary>
+        /// Keeps track of the id assigned to each message type
+        /// </summary>
+        /// <typeparam name="TMessage"></typeparam>
         static class MessageType<TMessage> where TMessage : IMessage
         {
             static readonly int id = messageTypeCounter++;
             public static int ID => id;
         }
-
+        
         SparseSet indices;
         List<IHandler<IMessage>> handlers;
 
