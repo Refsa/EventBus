@@ -7,7 +7,7 @@ namespace Refsa.EventBus
     /// </summary>
     public interface IResolver
     {
-        MessageHandler<TMessage> GetResolver<TMessage>() where TMessage : IMessage;
+        MessageHandler<TMessage> GetHandler<TMessage>() where TMessage : IMessage;
     }
 
     /// <summary>
@@ -24,7 +24,7 @@ namespace Refsa.EventBus
             resolvers = new Dictionary<System.Type, IHandler<IMessage>>();
         }
 
-        public MessageHandler<TMessage> GetResolver<TMessage>() where TMessage : IMessage
+        public MessageHandler<TMessage> GetHandler<TMessage>() where TMessage : IMessage
         {
             if (!resolvers.TryGetValue(typeof(TMessage), out var resolver))
             {
@@ -161,7 +161,7 @@ namespace Refsa.EventBus
             static readonly int id = messageTypeCounter++;
             public static int ID => id;
         }
-        
+
         SparseSet indices;
         List<IHandler<IMessage>> handlers;
 
@@ -171,7 +171,7 @@ namespace Refsa.EventBus
             handlers = new List<IHandler<IMessage>>();
         }
 
-        public MessageHandler<TMessage> GetResolver<TMessage>() where TMessage : IMessage
+        public MessageHandler<TMessage> GetHandler<TMessage>() where TMessage : IMessage
         {
             int mid = MessageType<TMessage>.ID;
             int idx = indices.Add(mid);

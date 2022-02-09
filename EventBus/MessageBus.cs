@@ -23,11 +23,11 @@ namespace Refsa.EventBus
             this.resolver = resolver;
         }
 
-        MessageHandler<TMessage> GetResolver<TMessage>() where TMessage : IMessage
+        MessageHandler<TMessage> GetHandler<TMessage>() where TMessage : IMessage
         {
             lock(locker)
             {
-                return resolver.GetResolver<TMessage>();
+                return resolver.GetHandler<TMessage>();
             }
         }
 
@@ -38,7 +38,7 @@ namespace Refsa.EventBus
         /// <typeparam name="TMessage"></typeparam>
         public void Pub<TMessage>(in TMessage message) where TMessage : IMessage
         {
-            GetResolver<TMessage>().Pub(message);
+            GetHandler<TMessage>().Pub(message);
         }
 
         /// <summary>
@@ -46,7 +46,7 @@ namespace Refsa.EventBus
         /// </summary>
         public void Pub<TMessage, HTarget>(in TMessage message) where TMessage : IMessage
         {
-            GetResolver<TMessage>().Pub<HTarget>(message);
+            GetHandler<TMessage>().Pub<HTarget>(message);
         }
 
         /// <summary>
@@ -54,7 +54,7 @@ namespace Refsa.EventBus
         /// </summary>
         public void Pub<TMessage>(in TMessage message, object target) where TMessage : IMessage
         {
-            GetResolver<TMessage>().Pub(message, target);
+            GetHandler<TMessage>().Pub(message, target);
         }
 
         /// <summary>
@@ -64,10 +64,10 @@ namespace Refsa.EventBus
         /// <typeparam name="TMessage"></typeparam>
         public void Sub<TMessage>(MessageHandlerDelegates.MessageHandler<TMessage> callback) where TMessage : IMessage
         {
-            var resolver = GetResolver<TMessage>();
+            var handler = GetHandler<TMessage>();
             lock (locker)
             {
-                resolver.Sub(callback);
+                handler.Sub(callback);
             }
         }
 
@@ -78,10 +78,10 @@ namespace Refsa.EventBus
         /// <typeparam name="TMessage"></typeparam>
         public void UnSub<TMessage>(MessageHandlerDelegates.MessageHandler<TMessage> callback) where TMessage : IMessage
         {
-            var resolver = GetResolver<TMessage>();
+            var handler = GetHandler<TMessage>();
             lock (locker)
             {
-                resolver.UnSub(callback);
+                handler.UnSub(callback);
             }
         }
     }
