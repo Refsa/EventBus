@@ -183,4 +183,23 @@ namespace Refsa.EventBus
             return (MessageHandler<TMessage>)handlers[idx];
         }
     }
+
+    /// <summary>
+    /// Resolver for storing handlers in the global scope <br/>
+    /// 
+    /// All handlers are shared between any instance of GlobalResolver
+    /// </summary>
+    public class GlobalResolver : IResolver
+    {
+        static class Resolver<TMessage> where TMessage : IMessage
+        {
+            static readonly MessageHandler<TMessage> handler = new MessageHandler<TMessage>();
+            public static MessageHandler<TMessage> Handler => handler;   
+        }
+
+        public MessageHandler<TMessage> GetHandler<TMessage>() where TMessage : IMessage
+        {
+            return Resolver<TMessage>.Handler;
+        }
+    }
 }
