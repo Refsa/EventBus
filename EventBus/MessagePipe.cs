@@ -17,6 +17,14 @@ namespace Refsa.EventBus
             bus = new MessageBus();
         }
 
+        public MessagePipe(IResolver resolver, MessagePipe parent = null)
+        {
+            this.parent = parent;
+            parent?.AddChild(this);
+            children = new List<MessagePipe>();
+            bus = new MessageBus(resolver);
+        }
+
         /// <summary>
         /// Sets the parent pipe
         /// </summary>
