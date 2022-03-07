@@ -40,6 +40,18 @@ namespace Refsa.EventBus.Tests
             sub_and_pub_message(new SparseSetResolver());
         }
 
+        [Fact]
+        public void sub_and_pub_message_global_resolver()
+        {
+            sub_and_pub_message(new GlobalResolver());
+        }
+
+        [Fact]
+        public void sub_and_pub_message_static_resolver()
+        {
+            sub_and_pub_message(new StaticResolver());
+        }
+
         void unsub_message(IResolver resolver)
         {
             int counter = 0;
@@ -72,6 +84,18 @@ namespace Refsa.EventBus.Tests
             unsub_message(new SparseSetResolver());
         }
 
+        [Fact]
+        public void unsub_message_global_resolver()
+        {
+            unsub_message(new GlobalResolver());
+        }
+
+        [Fact]
+        public void unsub_message_static_resolver()
+        {
+            unsub_message(new StaticResolver());
+        }
+
         void busses_dont_overlap<TResolver>() where TResolver : IResolver, new()
         {
             var msg1 = new TestMessage { Content = 1234 };
@@ -102,6 +126,12 @@ namespace Refsa.EventBus.Tests
         public void busses_dont_overlap_sparse_set_resolver()
         {
             busses_dont_overlap<SparseSetResolver>();
+        }
+
+        [Fact]
+        public void busses_dont_overlap_static_resolver()
+        {
+            busses_dont_overlap<StaticResolver>();
         }
 
         void event_bus_can_be_used_in_multiple_threads<TResolver>() where TResolver : IResolver, new()
@@ -154,6 +184,18 @@ namespace Refsa.EventBus.Tests
         public void event_bus_can_be_used_in_multiple_threads_sparse_set_resolver()
         {
             event_bus_can_be_used_in_multiple_threads<SparseSetResolver>();
+        }
+
+        [Fact]
+        public void event_bus_can_be_used_in_multiple_threads_global_resolver()
+        {
+            event_bus_can_be_used_in_multiple_threads<GlobalResolver>();
+        }
+
+        [Fact]
+        public void event_bus_can_be_used_in_multiple_threads_static_resolver()
+        {
+            event_bus_can_be_used_in_multiple_threads<StaticResolver>();
         }
 
         int CalcSum(int to)
