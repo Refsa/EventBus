@@ -50,10 +50,17 @@ namespace Refsa.EventBus
 
         public MessageBus Bus => bus;
 
-        public MessageQueue()
+        public MessageQueue(IResolver resolver = null)
         {
             bags = new Dictionary<int, IMessageBag>();
-            bus = new MessageBus();
+            if (resolver != null)
+            {
+                bus = new MessageBus(resolver);
+            }
+            else
+            {
+                bus = new MessageBus();
+            }
         }
 
         public void Enqueue<TMessage>(in TMessage value)
