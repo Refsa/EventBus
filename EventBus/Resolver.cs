@@ -9,7 +9,7 @@ namespace Refsa.EventBus
     {
         MessageHandler<TMessage> GetHandler<TMessage>() where TMessage : IMessage;
     }
-    
+
     /// <summary>
     /// Tracks the ID of each message type in a static context
     /// </summary>
@@ -133,8 +133,12 @@ namespace Refsa.EventBus
             {
                 Grow();
             }
+            else if (Contains(value))
+            {
+                return Get(value);
+            }
 
-            if (value >= 0 && !Contains(value))
+            if (value >= 0)
             {
                 dense[count] = value;
                 sparse[value] = count;
@@ -142,7 +146,7 @@ namespace Refsa.EventBus
                 return count - 1;
             }
 
-            return Get(value);
+            throw new System.ArgumentOutOfRangeException(nameof(value), "Cant add negative values to SparseSet");
         }
 
         /// <summary>
