@@ -40,6 +40,12 @@ namespace Refsa.EventBus.Tests
             sub_and_pub_message(new SparseSetResolver());
         }
 
+        [Fact]
+        public void sub_and_pub_message_global_resolver()
+        {
+            sub_and_pub_message(new GlobalResolver());
+        }
+
         void unsub_message(IResolver resolver)
         {
             int counter = 0;
@@ -70,6 +76,12 @@ namespace Refsa.EventBus.Tests
         public void unsub_message_sparse_set_resolver()
         {
             unsub_message(new SparseSetResolver());
+        }
+
+        [Fact]
+        public void unsub_message_global_resolver()
+        {
+            unsub_message(new GlobalResolver());
         }
 
         void busses_dont_overlap<TResolver>() where TResolver : IResolver, new()
@@ -154,6 +166,12 @@ namespace Refsa.EventBus.Tests
         public void event_bus_can_be_used_in_multiple_threads_sparse_set_resolver()
         {
             event_bus_can_be_used_in_multiple_threads<SparseSetResolver>();
+        }
+
+        [Fact]
+        public void event_bus_can_be_used_in_multiple_threads_global_resolver()
+        {
+            event_bus_can_be_used_in_multiple_threads<GlobalResolver>();
         }
 
         int CalcSum(int to)
