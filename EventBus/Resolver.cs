@@ -9,7 +9,7 @@ namespace Refsa.EventBus
     {
         MessageHandler<TMessage> GetHandler<TMessage>() where TMessage : IMessage;
     }
-    
+
     /// <summary>
     /// Tracks the ID of each message type in a static context
     /// </summary>
@@ -57,84 +57,6 @@ namespace Refsa.EventBus
     }
 
     /// <summary>
-    /// A resolver using a sparse set for internal lookup <br/>
-    /// 
-    /// Optimized for speed <br/>
-    /// </summary>
-    public class SparseSetResolver : IResolver
-    {
-        /// <summary>
-        /// Keeps track of handlers for each message type
-        /// </summary>
-        /// <typeparam name="TMessage"></typeparam>
-        static class Resolver<TMessage> where TMessage : IMessage
-        {
-            static List<IHandler<IMessage>> handlers = new List<IHandler<IMessage>>();
-
-            public static IHandler<IMessage> Get(int index, out bool created)
-            {
-                created = false;
-                while (index >= handlers.Count)
-                {
-                    handlers.Add(null);
-                }
-                if (handlers[index] == null)
-                {
-                    handlers[index] = new MessageHandler<TMessage>();
-                    created = true;
-                }
-
-                return handlers[index];
-            }
-
-            public static void Clear(int index)
-            {
-                if (index >= handlers.Count) return;
-                handlers[index] = null;
-            }
-        }
-
-        static readonly SparseSet resolverIndices;
-        static int resolverCounter;
-        static readonly List<System.Action<int>> resolverClears;
-        static SparseSetResolver()
-        {
-            resolverIndices = new SparseSet(1);
-            resolverClears = new List<System.Action<int>>();
-        }
-
-        int resolverIndex;
-        int resolverCount;
-
-        public SparseSetResolver()
-        {
-            resolverCount = resolverCounter++;
-            resolverIndex = resolverIndices.Add(resolverCount);
-        }
-
-        ~SparseSetResolver()
-        {
-            resolverIndices.Remove(resolverCount);
-            foreach (var clear in resolverClears)
-            {
-                clear.Invoke(resolverIndex);
-            }
-        }
-
-        public MessageHandler<TMessage> GetHandler<TMessage>() where TMessage : IMessage
-        {
-            var handler = (MessageHandler<TMessage>)Resolver<TMessage>.Get(resolverIndex, out bool created);
-
-            if (created)
-            {
-                resolverClears.Add(Resolver<TMessage>.Clear);
-            }
-
-            return handler;
-        }
-    }
-
-    /// <summary>
     /// Resolver for storing handlers in the global scope <br/>
     /// 
     /// All handlers are shared between any instance of GlobalResolver
@@ -150,6 +72,35 @@ namespace Refsa.EventBus
         public MessageHandler<TMessage> GetHandler<TMessage>() where TMessage : IMessage
         {
             return Resolver<TMessage>.Handler;
+        }
+    }
+
+    /// <summary>
+    /// A resolver using a sparse set for internal lookup <br/>
+    /// 
+    /// Optimized for speed <br/>
+    /// </summary>
+    public class SparseSetResolver : IResolver
+    {
+        SparseSet indices;
+        List<IHandler<IMessage>> handlers;
+
+        public SparseSetResolver()
+        {
+            indices = new SparseSet(1);
+            handlers = new List<IHandler<IMessage>>();
+        }
+
+        public MessageHandler<TMessage> GetHandler<TMessage>() where TMessage : IMessage
+        {
+            int mid = MessageType.TypeID<TMessage>.ID;
+            int idx = indices.Add(mid);
+
+            if (idx >= handlers.Count)
+            {
+                handlers.Add(new MessageHandler<TMessage>());
+            }
+            return (MessageHandler<TMessage>)handlers[idx];
         }
     }
 
@@ -182,8 +133,12 @@ namespace Refsa.EventBus
             {
                 Grow();
             }
+            else if (Contains(value))
+            {
+                return Get(value);
+            }
 
-            if (value >= 0 && !Contains(value))
+            if (value >= 0)
             {
                 dense[count] = value;
                 sparse[value] = count;
@@ -191,7 +146,7 @@ namespace Refsa.EventBus
                 return count - 1;
             }
 
-            return Get(value);
+            throw new System.ArgumentOutOfRangeException(nameof(value), "Cant add negative values to SparseSet");
         }
 
         /// <summary>
