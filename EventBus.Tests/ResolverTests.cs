@@ -11,28 +11,26 @@ namespace Refsa.EventBus.Tests
         struct TestMessage1 : IMessage { }
         struct TestMessage2 : IMessage { }
 
-        static readonly FieldInfo resolverIndexFI = typeof(SparseSetResolver).GetField("resolverIndex", BindingFlags.NonPublic | BindingFlags.Instance);
-
-        void add_sparse_set_resolver()
-        {
-            var resolver2 = new SparseSetResolver();
-            Assert.Equal(1, (int)resolverIndexFI.GetValue(resolver2));
-        }
+        static readonly FieldInfo sparseSetFI = typeof(SparseSetResolver).GetField("indices", BindingFlags.Instance | BindingFlags.NonPublic);
+        static readonly FieldInfo sparseSetCountFI = typeof(SparseSet).GetField("count", BindingFlags.NonPublic | BindingFlags.Instance);
 
         [Fact]
         public void sparse_set_resolver_add()
         {
-            var resolver1 = new SparseSetResolver();
+            var resolver = new SparseSetResolver();
+            var sparseSet = sparseSetFI.GetValue(resolver);
+            int count = 0;
 
-            Assert.Equal(0, (int)resolverIndexFI.GetValue(resolver1));
+            for (int i = 0; i < 100; i++)
+            {
+                resolver.GetHandler<TestMessage1>();
+                count = (int)sparseSetCountFI.GetValue(sparseSet);
+                Assert.Equal(1, count);
+            }
 
-            add_sparse_set_resolver();
-
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
-
-            var resolver3 = new SparseSetResolver();
-            Assert.Equal(1, (int)resolverIndexFI.GetValue(resolver3));
+            resolver.GetHandler<TestMessage2>();
+            count = (int)sparseSetCountFI.GetValue(sparseSet);
+            Assert.Equal(2, count);
         }
     }
 }
