@@ -9,6 +9,26 @@ namespace Refsa.EventBus
     {
         MessageHandler<TMessage> GetHandler<TMessage>() where TMessage : IMessage;
     }
+    
+    /// <summary>
+    /// Tracks the ID of each message type in a static context
+    /// </summary>
+    static class MessageType
+    {
+        /// <summary>
+        /// the global message type counter
+        /// </summary>
+        static volatile int messageTypeCounter;
+        /// <summary>
+        /// Keeps track of the id assigned to each message type
+        /// </summary>
+        /// <typeparam name="TMessage"></typeparam>
+        public static class TypeID<TMessage> where TMessage : IMessage
+        {
+            static readonly int id = messageTypeCounter++;
+            public static int ID => id;
+        }
+    }
 
     /// <summary>
     /// A resolver using a dictionary as an interal lookup
@@ -17,19 +37,19 @@ namespace Refsa.EventBus
     /// </summary>
     public class DictionaryResolver : IResolver
     {
-        Dictionary<System.Type, IHandler<IMessage>> resolvers;
+        Dictionary<int, IHandler<IMessage>> resolvers;
 
         public DictionaryResolver()
         {
-            resolvers = new Dictionary<System.Type, IHandler<IMessage>>();
+            resolvers = new Dictionary<int, IHandler<IMessage>>();
         }
 
         public MessageHandler<TMessage> GetHandler<TMessage>() where TMessage : IMessage
         {
-            if (!resolvers.TryGetValue(typeof(TMessage), out var resolver))
+            if (!resolvers.TryGetValue(MessageType.TypeID<TMessage>.ID, out var resolver))
             {
                 resolver = new MessageHandler<TMessage>();
-                resolvers.Add(typeof(TMessage), resolver);
+                resolvers.Add(MessageType.TypeID<TMessage>.ID, resolver);
             }
 
             return (MessageHandler<TMessage>)resolver;
@@ -40,37 +60,22 @@ namespace Refsa.EventBus
     /// A resolver using a sparse set for internal lookup <br/>
     /// 
     /// Optimized for speed <br/>
-    /// uses N * 2 * sizeof(int) space where N is the total count of message types
-    /// registered across all resolvers
+    /// uses N * 2 * sizeof(int) space where N is the amount of registered message types
     /// </summary>
     public class SparseSetResolver : IResolver
     {
-        /// <summary>
-        /// the global message type counter
-        /// </summary>
-        static volatile int messageTypeCounter;
-        /// <summary>
-        /// Keeps track of the id assigned to each message type
-        /// </summary>
-        /// <typeparam name="TMessage"></typeparam>
-        static class MessageType<TMessage> where TMessage : IMessage
-        {
-            static readonly int id = messageTypeCounter++;
-            public static int ID => id;
-        }
-
         SparseSet indices;
         List<IHandler<IMessage>> handlers;
 
         public SparseSetResolver()
         {
-            indices = new SparseSet(0);
+            indices = new SparseSet(1);
             handlers = new List<IHandler<IMessage>>();
         }
 
         public MessageHandler<TMessage> GetHandler<TMessage>() where TMessage : IMessage
         {
-            int mid = MessageType<TMessage>.ID;
+            int mid = MessageType.TypeID<TMessage>.ID;
             int idx = indices.Add(mid);
 
             if (idx >= handlers.Count)
@@ -86,7 +91,11 @@ namespace Refsa.EventBus
     /// </summary>
     public class StaticResolver : IResolver
     {
-        static class HandlerResolver<TMessage> where TMessage : IMessage
+        /// <summary>
+        /// Keeps track of handlers for each message type
+        /// </summary>
+        /// <typeparam name="TMessage"></typeparam>
+        static class Resolver<TMessage> where TMessage : IMessage
         {
             static List<IHandler<IMessage>> handlers = new List<IHandler<IMessage>>();
 
@@ -118,17 +127,8 @@ namespace Refsa.EventBus
         static readonly List<System.Action<int>> resolverClears;
         static StaticResolver()
         {
-            resolverIndices = new SparseSet(0);
+            resolverIndices = new SparseSet(1);
             resolverClears = new List<System.Action<int>>();
-        }
-
-        ~StaticResolver()
-        {
-            resolverIndices.Remove(resolverCount);
-            foreach (var clear in resolverClears)
-            {
-                clear.Invoke(resolverIndex);
-            }
         }
 
         int resolverIndex;
@@ -140,13 +140,22 @@ namespace Refsa.EventBus
             resolverIndex = resolverIndices.Add(resolverCount);
         }
 
+        ~StaticResolver()
+        {
+            resolverIndices.Remove(resolverCount);
+            foreach (var clear in resolverClears)
+            {
+                clear.Invoke(resolverIndex);
+            }
+        }
+
         public MessageHandler<TMessage> GetHandler<TMessage>() where TMessage : IMessage
         {
-            var handler = (MessageHandler<TMessage>)HandlerResolver<TMessage>.Get(resolverIndex, out bool created);
+            var handler = (MessageHandler<TMessage>)Resolver<TMessage>.Get(resolverIndex, out bool created);
 
             if (created)
             {
-                resolverClears.Add(HandlerResolver<TMessage>.Clear);
+                resolverClears.Add(Resolver<TMessage>.Clear);
             }
 
             return handler;
