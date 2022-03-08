@@ -60,36 +60,8 @@ namespace Refsa.EventBus
     /// A resolver using a sparse set for internal lookup <br/>
     /// 
     /// Optimized for speed <br/>
-    /// uses N * 2 * sizeof(int) space where N is the amount of registered message types
     /// </summary>
     public class SparseSetResolver : IResolver
-    {
-        SparseSet indices;
-        List<IHandler<IMessage>> handlers;
-
-        public SparseSetResolver()
-        {
-            indices = new SparseSet(1);
-            handlers = new List<IHandler<IMessage>>();
-        }
-
-        public MessageHandler<TMessage> GetHandler<TMessage>() where TMessage : IMessage
-        {
-            int mid = MessageType.TypeID<TMessage>.ID;
-            int idx = indices.Add(mid);
-
-            if (idx >= handlers.Count)
-            {
-                handlers.Add(new MessageHandler<TMessage>());
-            }
-            return (MessageHandler<TMessage>)handlers[idx];
-        }
-    }
-
-    /// <summary>
-    /// 
-    /// </summary>
-    public class StaticResolver : IResolver
     {
         /// <summary>
         /// Keeps track of handlers for each message type
@@ -125,7 +97,7 @@ namespace Refsa.EventBus
         static readonly SparseSet resolverIndices;
         static int resolverCounter;
         static readonly List<System.Action<int>> resolverClears;
-        static StaticResolver()
+        static SparseSetResolver()
         {
             resolverIndices = new SparseSet(1);
             resolverClears = new List<System.Action<int>>();
@@ -134,13 +106,13 @@ namespace Refsa.EventBus
         int resolverIndex;
         int resolverCount;
 
-        public StaticResolver()
+        public SparseSetResolver()
         {
             resolverCount = resolverCounter++;
             resolverIndex = resolverIndices.Add(resolverCount);
         }
 
-        ~StaticResolver()
+        ~SparseSetResolver()
         {
             resolverIndices.Remove(resolverCount);
             foreach (var clear in resolverClears)

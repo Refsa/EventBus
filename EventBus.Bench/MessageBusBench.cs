@@ -13,7 +13,6 @@ namespace Refsa.EventBus.Bench
         MessageBus messageBusDictResolver;
         MessageBus messageBusSparseSetResolver;
         MessageBus messageBusGlobalResolver;
-        MessageBus messageBusStaticResolver;
         MessageHandlerDelegates.MessageHandler<SimpleMessage> PubSimpleMessageDictResolverDelegate;
         MessageHandlerDelegates.MessageHandler<SimpleMessage> PubSimpleMessageSparseSetResolverDelegate;
         MessageHandlerDelegates.MessageHandler<SimpleMessage> PubSimpleMessageGlobalResolverDelegate;
@@ -23,7 +22,6 @@ namespace Refsa.EventBus.Bench
             messageBusDictResolver = new MessageBus(new DictionaryResolver());
             messageBusSparseSetResolver = new MessageBus(new SparseSetResolver());
             messageBusGlobalResolver = new MessageBus(new GlobalResolver());
-            messageBusStaticResolver = new MessageBus(new StaticResolver());
         }
 
         [Benchmark]
@@ -80,25 +78,6 @@ namespace Refsa.EventBus.Bench
             }
 
             messageBusGlobalResolver.UnSub(PubSimpleMessageGlobalResolverDelegate);
-            return value;
-        }
-
-        [Benchmark]
-        public int PubSimpleMessageStaticResolver_10M()
-        {
-            int value = 0;
-            MessageHandlerDelegates.MessageHandler<SimpleMessage> callback = (in SimpleMessage msg) =>
-            {
-                value++;
-            };
-            messageBusStaticResolver.Sub(callback);
-
-            for (int i = 0; i < 10_000_000; i++)
-            {
-                messageBusStaticResolver.Pub(new SimpleMessage { Value = 1234 });
-            }
-
-            messageBusStaticResolver.UnSub(callback);
             return value;
         }
     }
